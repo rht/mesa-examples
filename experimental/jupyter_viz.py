@@ -156,7 +156,7 @@ def MesaComponent(viz):
     )
 
     # 3. Buttons
-    playing = solara.use_reactive(False)
+    playing, set_playing = solara.use_state(False)
 
     def on_value_play(change):
         if viz.model.running:
@@ -165,33 +165,41 @@ def MesaComponent(viz):
         else:
             playing.value = False
 
+    def run_loop():
+        if not playing:
+            return
+        viz.do_play()
+        set_playing(False)
+
+    solara.use_thread(run_loop, dependencies=[playing])
+
     with solara.Row():
         solara.Button(label="Step", color="primary", on_click=viz.do_step)
         # This style is necessary so that the play widget has almost the same
         # height as typical Solara buttons.
-        solara.Style(
-            """
-        .widget-play {
-            height: 30px;
-        }
-        """
-        )
-        widgets.Play(
-            value=0,
-            interval=400,
-            repeat=True,
-            show_repeat=False,
-            on_value=on_value_play,
-            playing=playing.value,
-            on_play=playing.set,
-        )
+        #solara.Style(
+        #    """
+        #.widget-play {
+        #    height: 30px;
+        #}
+        #"""
+        #)
+        #widgets.Play(
+        #    value=0,
+        #    interval=400,
+        #    repeat=True,
+        #    show_repeat=False,
+        #    on_value=on_value_play,
+        #    playing=playing.value,
+        #    on_play=playing.set,
+        #)
         # threaded_do_play is not used for now because it
         # doesn't work in Google colab. We use
         # ipywidgets.Play until it is fixed. The threading
         # version is definite a much better implementation,
         # if it works.
-        # solara.Button(label="▶", color="primary", on_click=viz.threaded_do_play)
-        # solara.Button(label="⏸︎", color="primary", on_click=viz.do_pause)
+        solara.Button(label="▶", color="primary", on_click=lambda: set_playing(True))
+        solara.Button(label="⏸︎", color="primary", on_click=lambda: set_playing(False))
         # solara.Button(label="Reset", color="primary", on_click=do_reset)
 
     with solara.GridFixed(columns=2):
